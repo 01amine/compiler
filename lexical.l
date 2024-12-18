@@ -104,3 +104,63 @@ nl            \n
 int yywrap() {
     return 1; 
 }
+%{
+#include "syn.tab.h"
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+
+int line = 1;      // Ligne actuelle
+int column = 1;    // Colonne actuelle
+
+#define YY_USER_ACTION column += yyleng;
+%}
+
+%%
+
+\n                   { line++; column = 1; }
+[ \t]+               ; // Ignorer les espaces blancs
+"--"[^\n]*          ; // Commentaire sur une ligne
+\{-([^{}]|(\{-.*\}-))*\} ; // Commentaire multi-ligne
+DEBUT                { return DEBUT; }
+FIN                  { return FIN; }
+EXECUTION            { return EXECUTION; }
+SI                   { return SI; }
+ALORS                { return ALORS; }
+SINON                { return SINON; }
+TANTQUE              { return TANTQUE; }
+FAIRE                { return FAIRE; }
+FIXE                 { return FIXE; }
+ET                   { return ET; }
+OU                   { return OU; }
+afficher             { return AFFICHER; }
+lire                 { return LIRE; }
+
+"<-"                 { return ASSIGN; }
+":"                  { return COLON; }
+";"                  { return SEMICOLON; }
+"["                  { return LBRACKET; }
+"]"                  { return RBRACKET; }
+"{"                  { return LBRACE; }
+"}"                  { return RBRACE; }
+"("                  { return LPAREN; }
+")"                  { return RPAREN; }
+"="                  { return EQUAL; }
+"<"                  { return LT; }
+">"                  { return GT; }
+"<="                 { return LE; }
+">="                 { return GE; }
+"!="                 { return NE; }
+
+[a-zA-Z_][a-zA-Z0-9_]* { yylval.str = strdup(yytext); return IDENTIFIER; }
+-?[0-9]+\.[0-9]+      { yylval.real = atof(yytext); return REALNUMBER; }
+-?[0-9]+              { yylval.num = atoi(yytext); return INTEGER; }
+\"[^\"]*\"            { yylval.str = strdup(yytext); return STRING; }
+
+.                     { printf("Erreur lexicale à la ligne %d, colonne %d : caractère inattendu '%s'\n", line, column, yytext); }
+%%
+
+int yywrap() {
+    return 1;
+}
+
